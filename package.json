@@ -1,0 +1,22 @@
+{
+  "name": "express-mysql-refreshtoken-boilerplate",
+  "version": "1.0.0",
+  "description": "A boilerplate for Node.js web applications with express, sequelize and bearer auth token being invalidated on logout",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon src/index.js"
+  },
+  "author": "Vlad Bormisov",
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  },
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "express-fileupload": "^1.4.0",
+    "libphonenumber": "^0.0.10",
+    "mysql2": "^2.1.0",
+    "sequelize": "^6.3.4"
+  }
+}
