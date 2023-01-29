@@ -2,7 +2,9 @@ const express = require("express");
 
 const routes = require("./routes");
 const { initializeDB } = require("./db");
+const { JWT_BLACKLIST_MAINTAIN_PAUSE } = require('./config')
 const { createCleanFilesDir } = require("./services/file");
+const { maintainJwtBlacklist } = require("./services/auth");
 
 const app = express();
 app.use(express.json());
@@ -21,6 +23,9 @@ app.use((err, req, res, next) => {
 });
 initializeDB()
   .then(createCleanFilesDir)
+  .then(() => {
+    setInterval(maintainJwtBlacklist, JWT_BLACKLIST_MAINTAIN_PAUSE)
+  })
   .then(() => {
     app.listen(process.env.PORT, () =>
       console.log(`App listening on port ${process.env.PORT}`)
