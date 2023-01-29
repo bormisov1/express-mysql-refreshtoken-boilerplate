@@ -18,6 +18,6 @@ router.get("/file/list", fileController.list);
 router.delete("/file/delete/:id", fileController.remove);
 router.get("/file/:id", fileController.details);
 router.get("/file/download/:id", fileController.download);
-router.get("/info", (req, res) => res.send(req.user.id));
+router.get("/info", (req, res) => res.send(req.userId));
 
 module.exports = router;

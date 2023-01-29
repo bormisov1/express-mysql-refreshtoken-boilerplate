@@ -17,8 +17,9 @@ function signin(req, res, next) {
 function authenticateAccess(req, res, next) {
   authService
     .authenticateAccess(req.get("authorization"))
-    .then((user) => {
-      req.user = user;
+    .then(({payload, token}) => {
+      req.userId = payload.id;
+      req.token = token;
       next();
     })
     .catch(next);
@@ -33,14 +34,16 @@ function issueAccessToken(req, res, next) {
 
 function logout(req, res, next) {
   authService
-    .logout(req.user.id)
+    .logout(req.get("authorization"))
     .then((result) => res.json(result))
     .catch(next);
 }
 
 async function formatId(req, res, next) {
-  req.body.id = await authService.formatId(req.body.id).catch(next);
-  next();
+  authService.formatId(req.body.id).then(id => {
+    req.body.id = id;
+    next();
+  }).catch(next);
 }
 
 module.exports = {

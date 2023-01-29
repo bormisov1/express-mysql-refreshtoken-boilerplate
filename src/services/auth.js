@@ -2,9 +2,12 @@ const crypto = require("crypto");
 const {
   national: formatPhoneNumberDependingOnCountry,
 } = require("libphonenumber");
+const jwt = require("jsonwebtoken");
 
 const User = require("../db").User;
-const { PASSWORD_SECRET } = require("../config");
+const { PASSWORD_SECRET, JWT_SECRET, JWT_EXPIRATION_TIME} = require("../config");
+
+let jwtBlacklist = [];
 
 async function computeHash(input, salt) {
   return new Promise((resolve) =>
@@ -20,10 +23,7 @@ async function signin(id, password) {
   if (!user) throw new Error("user_with_id_does_not_exist");
   const passHash = await computeHash(password, PASSWORD_SECRET);
   if (passHash !== user.passHash) throw new Error("wrong_password");
-  const accessToken = crypto.randomBytes(64);
-  user.accessToken = accessToken;
-  await user.save();
-  return { accessToken: accessToken.toString("base64") };
+  return { accessToken: await makeJWT(id) };
 }
 
 function makeUnauthorizedError() {
@@ -33,43 +33,36 @@ function makeUnauthorizedError() {
 }
 
 async function authenticateAccess(tokenHeader) {
-  const token = tokenHeader?.split(" ")[1];
-  if (!tokenHeader || !token) throw makeUnauthorizedError();
-  const user = await User.findOne({
-    where: { accessToken: Buffer.from(token, "base64") },
-  });
-  if (!user) throw makeUnauthorizedError();
-  return user;
+  const token = parseAuthHeader(tokenHeader);
+  if (!tokenHeader || !token || jwtBlacklist.includes(token)) throw makeUnauthorizedError();
+  const payload = await verifyJWT(token);
+  if (!payload) throw makeUnauthorizedError();
+  return {payload, token};
 }
 
-async function issueAccessToken(token) {
-  if (!token) throw makeUnauthorizedError();
+async function issueAccessToken(tokenHeader) {
+  if (!tokenHeader) throw makeUnauthorizedError();
   const user = await User.findOne({
-    where: { refreshToken: Buffer.from(token.split(" ")[1], "base64") },
+    where: { refreshToken: Buffer.from(parseAuthHeader(tokenHeader), "base64") },
   });
   if (!user) throw makeUnauthorizedError();
-  user.accessToken = crypto.randomBytes(64);
-  await user.save();
-  return { accessToken: user.accessToken.toString("base64") };
+  return { accessToken: await makeJWT(user.id) };
 }
 
 async function signup(id, password) {
   const passHash = await computeHash(password, PASSWORD_SECRET);
-  const tokens = {
-    accessToken: crypto.randomBytes(64),
-    refreshToken: crypto.randomBytes(64),
-  };
-  await User.create({ id, passHash, ...tokens }).catch((err) => {
+  const refreshToken = crypto.randomBytes(64);
+  await User.create({ id, passHash, refreshToken }).catch((err) => {
     throw new Error("failed_to_signup_with_provided_parameters");
   });
   return {
-    accessToken: tokens.accessToken.toString("base64"),
-    refreshToken: tokens.refreshToken.toString("base64"),
+    accessToken: await makeJWT(id),
+    refreshToken: refreshToken.toString("base64"),
   };
 }
 
-async function logout(id) {
-  await User.update({ accessToken: null }, { where: { id } });
+async function logout(tokenHeader) {
+  jwtBlacklist.push(parseAuthHeader(tokenHeader))
   return { ok: true };
 }
 
@@ -90,6 +83,36 @@ function validateFormatIdAsPhoneOrEmail(id) {
   return null;
 }
 
+async function makeJWT(id) {
+  return new Promise(resolve => {
+    jwt.sign({id}, JWT_SECRET, {expiresIn: JWT_EXPIRATION_TIME}, (err, token) => {
+      if (err) throw err;
+      resolve(token);
+    })
+  })
+}
+
+async function verifyJWT(token) {
+  return new Promise(resolve => {
+    jwt.verify(token, JWT_SECRET, {}, (err, payload) => {
+      if (err) {
+        return resolve(null)
+      }
+      resolve(payload);
+    })
+  });
+}
+
+async function maintainJwtBlacklist() {
+  const jwtBlacklistExpired = await Promise.all(jwtBlacklist.map(async token => await verifyJWT(token) === null))
+  jwtBlacklist = jwtBlacklist.filter((token, i) => jwtBlacklistExpired[i])
+}
+
+function parseAuthHeader(header) {
+  if (!header || !header.split) return '';
+  return header.split(' ')[1] || ''
+}
+
 module.exports = {
   signin,
   signup,
@@ -97,4 +120,5 @@ module.exports = {
   authenticateAccess,
   issueAccessToken,
   formatId,
+  maintainJwtBlacklist
 };
