@@ -33,17 +33,18 @@ function makeUnauthorizedError() {
 }
 
 async function authenticateAccess(tokenHeader) {
+  if (!tokenHeader) throw makeUnauthorizedError();
   const token = parseAuthHeader(tokenHeader);
-  if (!tokenHeader || !token || jwtBlacklist.includes(token)) throw makeUnauthorizedError();
+  if (!token || jwtBlacklist.includes(token)) throw makeUnauthorizedError();
   const payload = await verifyJWT(token);
   if (!payload) throw makeUnauthorizedError();
   return {payload, token};
 }
 
-async function issueAccessToken(tokenHeader) {
-  if (!tokenHeader) throw makeUnauthorizedError();
+async function issueAccessToken(token) {
+  if (!token) throw makeUnauthorizedError();
   const user = await User.findOne({
-    where: { refreshToken: Buffer.from(parseAuthHeader(tokenHeader), "base64") },
+    where: { refreshToken: Buffer.from(token, "base64") },
   });
   if (!user) throw makeUnauthorizedError();
   return { accessToken: await makeJWT(user.id) };
@@ -61,8 +62,8 @@ async function signup(id, password) {
   };
 }
 
-async function logout(tokenHeader) {
-  jwtBlacklist.push(parseAuthHeader(tokenHeader))
+async function logout(token) {
+  jwtBlacklist.push(token)
   return { ok: true };
 }
 
