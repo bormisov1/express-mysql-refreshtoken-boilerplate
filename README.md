@@ -16,13 +16,21 @@ A boilerplate for **Node.js** web applications. It uses express.js, sequelize fo
 │   ├── services/              # Services
 │   ├── db/                    # Database and models
 │   ├── routes/                # Route definitions
-│   ├── index.js               # Express application
-│   └── config.js              # Gateway between config (partially from .env) and the rest of the app
-├── .env                       # API keys, passwords, and other sensitive information
+├── config.js              # Gateway between config (partially from .env) and the rest of the app
 ├── index.js                   # Express application
-└── package.json               # NPM Dependencies and scripts
+├── package.json               # NPM Dependencies and scripts
+└── .env                       # API keys, passwords, and other sensitive information
 ```
+#### .env example
+```
+PORT = 3000
 
+DB_HOST=db
+DB_PORT=3306
+DB_DATABASE=mydatabase
+DB_USERNAME=root
+DB_PASSWORD=password
+```
 ## Contributing
 
 This boilerplate is open to suggestions and contributions, documentation contributions are also welcome! 😊
