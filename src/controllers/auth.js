@@ -27,14 +27,14 @@ function authenticateAccess(req, res, next) {
 
 function issueAccessToken(req, res, next) {
   authService
-    .issueAccessToken(req.get("authorization"))
+    .issueAccessToken(req.token)
     .then((result) => res.json(result))
     .catch(next);
 }
 
 function logout(req, res, next) {
   authService
-    .logout(req.get("authorization"))
+    .logout(req.token)
     .then((result) => res.json(result))
     .catch(next);
 }
