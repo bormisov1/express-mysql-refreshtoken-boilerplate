@@ -16,7 +16,7 @@ A boilerplate for **Node.js** web applications. It uses express.js, sequelize fo
 │   ├── services/              # Services
 │   ├── db/                    # Database and models
 │   ├── routes/                # Route definitions
-├── config.js              # Gateway between config (partially from .env) and the rest of the app
+├── config.js                  # Gateway between config (partially from .env) and the rest of the app
 ├── index.js                   # Express application
 ├── package.json               # NPM Dependencies and scripts
 └── .env                       # API keys, passwords, and other sensitive information
